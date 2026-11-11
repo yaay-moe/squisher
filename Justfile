@@ -19,9 +19,9 @@ _check-root:
 
 # Build OCI for bootc
 [group('bootc')]
-build-bootc:
+build-bootc *args:
     #!/usr/bin/env bash
-    mkosi build -ff --profile bootc-ostree
+    mkosi build -ff --profile bootc-ostree {{ args }}
 
 [group('bootc')]
 _bootc *ARGS:
@@ -80,14 +80,9 @@ rechunk:
 
 # Build .raw files for systemd-sysupdate
 [group('sysupdate')]
-build-sysupdate $profiles=profiles:
+build-sysupdate *args:
     #!/usr/bin/env bash
-    
-    for profile in {{profiles}}; do
-        args="$args --profile $profile"
-    done
-
-    mkosi build -B -ff sysupdate --profile=sysupdate ${args}
+    mkosi build -ff sysupdate --profile=sysupdate {{ args }}
 
 [group('sysupdate')]
 _find-raw-sysupdate:
@@ -99,3 +94,8 @@ vm-sysupdate:
     dd if=/dev/zero of=$({{ just }} _find-raw-sysupdate) bs=1G count=0 seek=50
     # We use --no-tpm to ensure this will boot on older hardware (such as our VPS) 
     vmbuddy $({{ just }} _find-raw-sysupdate) --no-tpm
+
+# Resize .raw file for writing to a live iso or system
+[group('sysupdate')]
+resize-raw-sysupdate:
+    dd if=/dev/zero of=$({{ just }} _find-raw-sysupdate) bs=1G count=0 seek=16
