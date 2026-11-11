@@ -91,7 +91,7 @@ build-sysupdate $profiles=profiles:
 
 [group('sysupdate')]
 _find-raw-sysupdate:
-    find "{{ base_dir }}/mkosi.output" -maxdepth 1 -iname "{{ image_name }}*x86-64.raw"
+    find "{{ base_dir }}/mkosi.output" -maxdepth 1 -iname "{{ image_name }}*x86-64.raw" | sort -nr | head -n1
 
 # Open the generated .raw in a vm
 [group('sysupdate')]
