@@ -4,11 +4,11 @@ image_tag := env("BUILD_IMAGE_TAG", "latest")
 base_dir := env("BUILD_BASE_DIR", ".")
 filesystem := env("BUILD_FILESYSTEM", "btrfs")
 just := just_executable()
-profiles := env("BUILD_PROFILES", "") 
+profiles := env("BUILD_PROFILES", "")
 
-build-bootc:
-    #!/usr/bin/env bash
-    mkosi build -ff --profile bootc-ostree
+[private]
+default:
+    @{{ just }} --list
 
 _check-root:
     #!/usr/bin/env bash
@@ -17,6 +17,13 @@ _check-root:
        exit 1
     fi
 
+# Build OCI for bootc
+[group('bootc')]
+build-bootc:
+    #!/usr/bin/env bash
+    mkosi build -ff --profile bootc-ostree
+
+[group('bootc')]
 _bootc *ARGS:
     #!/usr/bin/env bash
     set -eoux pipefail
@@ -36,12 +43,15 @@ _bootc *ARGS:
         -v "${BUILD_BASE_DIR:-.}:/data" \
         {{image}} bootc {{ ARGS }}
 
+# Load output into containers-storage
+[group('bootc')]
 load:
     #!/usr/bin/env bash
     set -x
     podman load -i "$(find mkosi.output -iname "{{ image_name }}*x86-64" -type d)" -q | cut -d: -f3 | xargs -I{} podman tag {} {{image}}
-    
 
+# Generate a bootable.img file
+[group('bootc')]
 generate-image-bootc $filesystem=filesystem:
     #!/usr/bin/env bash
     set -e
@@ -51,10 +61,13 @@ generate-image-bootc $filesystem=filesystem:
     fi
     {{ just }} _bootc install to-disk --generic-image --bootloader grub --via-loopback /data/bootable.img --filesystem "${filesystem}" --wipe
 
+# Lint the image
+[group('bootc')]
 lint:
     podman run --rm -it --entrypoint=bootc {{image}} container lint
 
-
+# Rechunk the image
+[group('bootc')]
 rechunk: 
     #!/usr/bin/env bash
     IMG="{{image}}"
@@ -64,3 +77,25 @@ rechunk:
         --label containers.bootc=1 \
         --compressed --max-layers 30 \
         -t $IMG | podman load
+
+# Build .raw files for systemd-sysupdate
+[group('sysupdate')]
+build-sysupdate $profiles=profiles:
+    #!/usr/bin/env bash
+    
+    for profile in {{profiles}}; do
+        args="$args --profile $profile"
+    done
+
+    mkosi build -B -ff sysupdate --profile=sysupdate ${args}
+
+[group('sysupdate')]
+_find-raw-sysupdate:
+    find "{{ base_dir }}/mkosi.output" -maxdepth 1 -iname "{{ image_name }}*x86-64.raw"
+
+# Open the generated .raw in a vm
+[group('sysupdate')]
+vm-sysupdate:
+    dd if=/dev/zero of=$({{ just }} _find-raw-sysupdate) bs=1G count=0 seek=50
+    # We use --no-tpm to ensure this will boot on older hardware (such as our VPS) 
+    vmbuddy $({{ just }} _find-raw-sysupdate) --no-tpm
