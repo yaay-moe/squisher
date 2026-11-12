@@ -22,9 +22,18 @@ _check-root:
 build-sysupdate *args:
     #!/usr/bin/env bash
     mkosi build -ff sysupdate --profile=sysupdate {{ args }}
+
+# Checksum and sign the build artifacts for systemd-sysupdate
+sign-build-sysupdate:
+    #!/usr/bin/env bash
     pushd "{{ base_dir }}/mkosi.output"
+    # Generate sha sums for each file (uki, usr, usr verity, usr verity sig) in SHA256SUMS
     sha256sum --binary $(basename -a $(find "." -iname "{{ image_name }}*usr*.raw*" -o -iname "{{ image_name }}*.efi")) > "./SHA256SUMS"
+
+    # Sign the SHA256SUMS file
+    gpg --output "./SHA256SUMS.gpg" --detach-sign "./SHA256SUMS"
     popd
+
 
 [group('sysupdate')]
 _find-raw-sysupdate:
