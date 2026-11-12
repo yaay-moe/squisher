@@ -17,67 +17,6 @@ _check-root:
        exit 1
     fi
 
-# Build OCI for bootc
-[group('bootc')]
-build-bootc *args:
-    #!/usr/bin/env bash
-    mkosi build -ff --profile bootc-ostree {{ args }}
-
-[group('bootc')]
-_bootc *ARGS:
-    #!/usr/bin/env bash
-    set -eoux pipefail
-
-    BOOTC_INSTALL_OPTIONS=()
-    BOOTC_INSTALL_OPTIONS+=("-v" "/var/lib/containers:/var/lib/containers" "-v" "/etc/containers:/etc/containers")
-
-    if [[ -d /sys/fs/selinux ]]; then
-      BOOTC_INSTALL_OPTIONS+=("-v" "/sys/fs/selinux:/sys/fs/selinux" "--security-opt" "label=type:unconfined_t")
-    fi
-
-    podman run \
-        --rm --privileged --pid=host \
-        -it \
-        "${BOOTC_INSTALL_OPTIONS[@]}" \
-        -v /dev:/dev \
-        -v "${BUILD_BASE_DIR:-.}:/data" \
-        {{image}} bootc {{ ARGS }}
-
-# Load output into containers-storage
-[group('bootc')]
-load:
-    #!/usr/bin/env bash
-    set -x
-    podman load -i "$(find mkosi.output -iname "{{ image_name }}*x86-64" -type d)" -q | cut -d: -f3 | xargs -I{} podman tag {} {{image}}
-
-# Generate a bootable.img file
-[group('bootc')]
-generate-image-bootc $filesystem=filesystem:
-    #!/usr/bin/env bash
-    set -e
-    {{ just }} _check-root
-    if [ ! -e "{{ base_dir }}/bootable.img" ] ; then
-        fallocate -l 20G "{{ base_dir }}/bootable.img"
-    fi
-    {{ just }} _bootc install to-disk --generic-image --bootloader grub --via-loopback /data/bootable.img --filesystem "${filesystem}" --wipe
-
-# Lint the image
-[group('bootc')]
-lint:
-    podman run --rm -it --entrypoint=bootc {{image}} container lint
-
-# Rechunk the image
-[group('bootc')]
-rechunk: 
-    #!/usr/bin/env bash
-    IMG="{{image}}"
-    export CHUNKAH_CONFIG_STR="$(podman inspect $IMG)"
-    podman run --rm --mount=type=image,src=$IMG,dest=/chunkah \
-        -e CHUNKAH_CONFIG_STR quay.io/coreos/chunkah build \
-        --label containers.bootc=1 \
-        --compressed --max-layers 30 \
-        -t $IMG | podman load
-
 # Build .raw files for systemd-sysupdate
 [group('sysupdate')]
 build-sysupdate *args:
