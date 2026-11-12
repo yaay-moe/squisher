@@ -22,6 +22,9 @@ _check-root:
 build-sysupdate *args:
     #!/usr/bin/env bash
     mkosi build -ff sysupdate --profile=sysupdate {{ args }}
+    pushd "{{ base_dir }}/mkosi.output"
+    sha256sum $(basename -a $(find "." -iname "{{ image_name }}*usr*.raw.zst" -o -iname "{{ image_name }}*.efi")) > "./SHA256SUMS"
+    popd
 
 [group('sysupdate')]
 _find-raw-sysupdate:
