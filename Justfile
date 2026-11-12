@@ -91,11 +91,11 @@ _find-raw-sysupdate:
 # Open the generated .raw in a vm
 [group('sysupdate')]
 vm-sysupdate:
-    dd if=/dev/zero of=$({{ just }} _find-raw-sysupdate) bs=1G count=0 seek=50
+    dd if=/dev/zero of=$({{ just }} _find-raw-sysupdate) bs=1G count=0 seek=25
     # We use --no-tpm to ensure this will boot on older hardware (such as our VPS) 
     vmbuddy $({{ just }} _find-raw-sysupdate) --no-tpm
 
 # Resize .raw file for writing to a live iso or system
 [group('sysupdate')]
 resize-raw-sysupdate:
-    dd if=/dev/zero of=$({{ just }} _find-raw-sysupdate) bs=1G count=0 seek=16
+    dd if=/dev/zero of=$({{ just }} _find-raw-sysupdate) bs=1G count=0 seek=12
