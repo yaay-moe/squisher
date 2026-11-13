@@ -21,7 +21,7 @@ _check-root:
 [group('sysupdate')]
 build-sysupdate *args:
     #!/usr/bin/env bash
-    mkosi build -ff sysupdate --profile=sysupdate {{ args }}
+    mkosi build -ff sysupdate --profile=sysupdate,hardening {{ args }}
 
 # Checksum and sign the build artifacts for systemd-sysupdate
 sign-build-sysupdate:
