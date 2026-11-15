@@ -21,9 +21,10 @@ _check-root:
 [group('sysupdate')]
 build-sysupdate *args:
     #!/usr/bin/env bash
+    set -euxo pipefail
     mkosi build -ff sysupdate --profile=sysupdate,hardening {{ args }}
     # Make sure the output directory belongs to the user running the build, even if the build was run as root
-    chown -R $USER:$USER "{{ base_dir }}/mkosi.output"
+    [ -z ${SUDO_USER} ] || chown -R ${SUDO_USER}:${SUDO_USER} "{{ base_dir }}/mkosi.output"
 
 # Checksum and sign the build artifacts for systemd-sysupdate
 sign-build-sysupdate:
