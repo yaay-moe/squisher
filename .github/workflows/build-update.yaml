@@ -1,64 +1,27 @@
+name: Build Squisher
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '15 13 * * *'
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   build:
-    name: Build sysupdate artifacts with mkosi
-  permissions:
-    contents: read
-    packages: write
-    id-token: write
-  timeout-minutes: 60
-  steps:
-    - name: Free disk space
-      uses: hastd/free-disk-space@68572aeaadb7f76bd408246328e95926323402b5 # v0.1.2
-      with:
-        exclude: |
-          /opt/hostedtoolcache/Python
-        skip-if-available: "64G"
-
-    - name: Checkout
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      with:
-        submodules: true
-
-    - name: Install just
-      shell: bash
-      run: |
-        sudo apt install -y --no-install-recommends just
-
-    - name: Install mkosi
-      uses: systemd/mkosi@2fa9a248a2fecebb0dd64a34c0fecdc5ca8335b9
-
-    - name: Render configuration (for debugging)
-      run: mkosi cat-config --debug
-
-    - name: Build the image itself
-      id: build
-      run: |
-        set -e
-        # Generate a random key
-        # NOTE: this will break updates for systemd versions below 262.2. Currently using for testing.
-        mkosi genkey
-        
-        # Run the build
-        just build-sysupdate --profile compress-output
-
-    - name: Sign the build output
-      id: sign
-      env:
-        SIGNING_KEY_ID: "852380BE54FDC526FDB512875A16C612781AEFF3"
-        SIGNING_KEY: ${{ secrets.SHA256SUM_PGP_KEY }}
-      run: |
-        # Sign the output
-        echo ${SIGNING_KEY} | gpg --import
-        just sign-build-sysupdate ${SIGNING_KEY_ID}
-        
-    - uses: actions/upload-artifact@v7
-      with:
-        # Name of the artifact to upload.
-        # Optional. Default is 'artifact'
-        name: Sysupdate artifacts
-
-        # A file, directory or wildcard pattern that describes what to upload
-        # Required.
-        path: mkosi.output
-
+    uses: ./.github/workflows/reusable-build
+    secrets: inherit
+    with:
+      publish: ${{ github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
