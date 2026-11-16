@@ -16,6 +16,7 @@ on:
 jobs:
   build:
     name: Build sysupdate artifacts with mkosi
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
