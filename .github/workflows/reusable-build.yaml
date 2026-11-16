@@ -81,12 +81,4 @@ jobs:
           just sign-build-sysupdate ${SIGNING_KEY_ID}
 
       - name: Create Release
-        id: create_release
-        uses: comnoco/create-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions
-        with:
-          tag_name: ${{ steps.freezeversion.outputs.image_version }}
-          release_name: ${{ steps.freezeversion.outputs.image_version }}
-          draft: false
-          prerelease: false
+        uses: softprops/action-gh-release@v3
