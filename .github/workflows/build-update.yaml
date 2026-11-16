@@ -1,7 +1,7 @@
 name: Build Squisher
 
 permissions:
-  contents: read
+  contents: write
   packages: write
   id-token: write
 
