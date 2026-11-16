@@ -70,6 +70,7 @@ jobs:
 
       - name: Sign the build output
         id: sign
+        if: inputs.publish
         env:
           SIGNING_KEY_ID: "B535F6A4A2B7EDEA"
           SIGNING_KEY: ${{ secrets.SHA256SUM_PGP_KEY }}
@@ -80,6 +81,7 @@ jobs:
 
       - name: Create Release
         uses: softprops/action-gh-release@v3
+        if: inputs.publish
         with:
           tag_name: ${{ steps.freezeversion.outputs.image_version }}
           make_latest: true
