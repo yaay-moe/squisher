@@ -83,7 +83,9 @@ jobs:
         with:
           tag_name: ${{ steps.freezeversion.outputs.image_version }}
           make_latest: true
+          working_directory: mkosi.output
           files: |
-            mkosi.output/*.raw
-            mkosi.output/*.efi
-            mkosi.output/SHA256SUMS*
+            *usr*.raw*
+            *.efi
+            SHA256SUMS
+            SHA256SUMS.gpg
