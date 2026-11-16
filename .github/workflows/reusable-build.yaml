@@ -72,8 +72,13 @@ jobs:
           # Name of the artifact to upload.
           # Optional. Default is 'artifact'
           name: Sysupdate artifacts
+          archive: false
 
           # A file, directory or wildcard pattern that describes what to upload
           # Required.
-          path: mkosi.output
+          path: |
+            mkosi.output/Squisher*.raw
+            mkosi.output/Squisher*.efi
+            mkosi.output/SHA256SUMS
+            mkosi.output/SHA256SUMS.gpg
 
