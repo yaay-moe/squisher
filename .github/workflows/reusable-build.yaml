@@ -82,3 +82,5 @@ jobs:
 
       - name: Create Release
         uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.freezeversion.outputs.image_version }}
