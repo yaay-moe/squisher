@@ -69,9 +69,12 @@ jobs:
         # if: inputs.publish
         env:
           SIGNING_KEY: ${{ secrets.USR_SIGNING_KEY }}
+          SIGNING_CRT: ${{ secrets.USR_SIGNING_CRT }}
         run: |
-          # Fetch key from Github secrets
+          # Fetch keys from Github secrets
           echo $SIGNING_KEY > mkosi.key
+          echo $SIGNING_CRT > mkosi.crt
+          # Make sure the key has strict permissions
           chmod 0600 mkosi.key
 
       - name: Build the image itself
