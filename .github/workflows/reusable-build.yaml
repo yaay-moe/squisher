@@ -57,14 +57,26 @@ jobs:
           # Add it as a step output as well
           echo "image_version=${VERSION}" >> "$GITHUB_OUTPUT"
 
+      - name: Generate a random key (PRs/branches)
+        id: keygen
+        if: false #$[{ !inputs.publish }]
+        run: |
+          # Generate a random key. Echo stderr to /dev/null so that the key is not printed out
+          mkosi genkey 2>/dev/null
+
+      - name: Fetch key from secrets (main)
+        id: keyfetch
+        # if: inputs.publish
+        env:
+          SIGNING_KEY: ${{ secrets.USR_SIGNING_KEY }}
+        run: |
+          # Fetch key from Github secrets
+          echo $SIGNING_KEY > mkosi.key
+
       - name: Build the image itself
         id: build
         run: |
           set -e
-          # Generate a random key. Echo stderr to /dev/null so that the key is not printed out
-          # NOTE: this will break updates for systemd versions below 262.2. Currently using for testing.
-          mkosi genkey 2>/dev/null
-        
           # Run the build
           just build-sysupdate --profile compress-output
 
