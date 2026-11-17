@@ -59,14 +59,14 @@ jobs:
 
       - name: Generate a random key (PRs/branches)
         id: keygen
-        if: false #$[{ !inputs.publish }]
+        if: $[{ !inputs.publish }]
         run: |
           # Generate a random key. Echo stderr to /dev/null so that the key is not printed out
           mkosi genkey 2>/dev/null
 
       - name: Fetch key from secrets (main)
         id: keyfetch
-        # if: inputs.publish
+        if: inputs.publish
         env:
           SIGNING_KEY: ${{ secrets.USR_SIGNING_KEY }}
           SIGNING_CRT: ${{ secrets.USR_SIGNING_CRT }}
