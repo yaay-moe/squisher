@@ -4,7 +4,4 @@ The goal of this system is to provide an image on which containers are run, simi
 
 # CI
 
-> [!WARNING]
-> Currently unfinished
-
 Builds are run weekly, on update to the repository, or manually. A new release is created and to install this release you must only run `updatectl update`.
