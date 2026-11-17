@@ -72,8 +72,8 @@ jobs:
           SIGNING_CRT: ${{ secrets.USR_SIGNING_CRT }}
         run: |
           # Fetch keys from Github secrets
-          echo $SIGNING_KEY > mkosi.key
-          echo $SIGNING_CRT > mkosi.crt
+          echo -n "$SIGNING_KEY" > mkosi.key
+          echo -n "$SIGNING_CRT" > mkosi.crt
           # Make sure the key has strict permissions
           chmod 0600 mkosi.key
 
