@@ -6,7 +6,7 @@ ProtectVersion=%A
 [Source]
 Type=url-file
 Path=https://github.com/yaay-moe/squisher/releases/latest/download/
-MatchPattern=%M_@v_%a.usr-%a-verity.@u.raw
+MatchPattern=%M_@v_%a.usr-%a-verity.@u.raw.zst
 
 [Target]
 Type=partition

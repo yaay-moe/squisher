@@ -24,14 +24,18 @@ build-sysupdate *args:
     mkosi build -ff sysupdate --profile=sysupdate,hardening {{ args }}
 
 # Checksum and sign the build artifacts for systemd-sysupdate
-sign-build-sysupdate:
+sign-build-sysupdate $signing_key="":
     #!/usr/bin/env bash
     pushd "{{ base_dir }}/mkosi.output"
     # Generate sha sums for each file (uki, usr, usr verity, usr verity sig) in SHA256SUMS
     sha256sum --binary $(basename -a $(find "." -iname "{{ image_name }}*usr*.raw*" -o -iname "{{ image_name }}*.efi")) > "./SHA256SUMS"
 
     # Sign the SHA256SUMS file
-    gpg --output "./SHA256SUMS.gpg" --detach-sign "./SHA256SUMS"
+    if [[ -z "{{signing_key}}" ]]; then
+        gpg --output "./SHA256SUMS.gpg" --detach-sign "./SHA256SUMS"
+    else
+        gpg --output "./SHA256SUMS.gpg" --local-user {{signing_key}} --detach-sign "./SHA256SUMS"
+    fi
     popd
 
 

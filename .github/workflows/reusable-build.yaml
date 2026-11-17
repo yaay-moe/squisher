@@ -1,0 +1,109 @@
+---
+name: Build Image
+on:
+  workflow_call:
+    inputs:
+      publish:
+        description: "Publish this image"
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      SHA256SUM_PGP_KEY:
+        description: "The private key used to sign the image hashes"
+        required: true
+
+jobs:
+  build:
+    name: Build sysupdate artifacts with mkosi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    timeout-minutes: 60
+    steps:
+      - name: Free disk space
+        uses: hastd/free-disk-space@68572aeaadb7f76bd408246328e95926323402b5 # v0.1.2
+        with:
+          exclude: |
+            /opt/hostedtoolcache/Python
+          skip-if-available: "64G"
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          submodules: true
+
+      - name: Install just
+        shell: bash
+        run: |
+          sudo apt install -y --no-install-recommends just
+
+      - name: Install mkosi
+        uses: systemd/mkosi@2fa9a248a2fecebb0dd64a34c0fecdc5ca8335b9
+
+      - name: Render configuration (for debugging)
+        run: mkosi cat-config --debug
+
+      - name: Freeze version
+        id: freezeversion
+        run: |
+          # Calculate the version and then lock it for the build
+          VERSION=$(./mkosi.version)
+          rm mkosi.version
+          echo ${VERSION} > mkosi.version
+
+          # Add it as a step output as well
+          echo "image_version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate a random key (PRs/branches)
+        id: keygen
+        if: ${{ !inputs.publish }}
+        run: |
+          # Generate a random key. Echo stderr to /dev/null so that the key is not printed out
+          mkosi genkey 2>/dev/null
+
+      - name: Fetch key from secrets (main)
+        id: keyfetch
+        if: inputs.publish
+        env:
+          SIGNING_KEY: ${{ secrets.USR_SIGNING_KEY }}
+          SIGNING_CRT: ${{ secrets.USR_SIGNING_CRT }}
+        run: |
+          # Fetch keys from Github secrets
+          echo -n "$SIGNING_KEY" > mkosi.key
+          echo -n "$SIGNING_CRT" > mkosi.crt
+          # Make sure the key has strict permissions
+          chmod 0600 mkosi.key
+
+      - name: Build the image itself
+        id: build
+        run: |
+          set -e
+          # Run the build
+          just build-sysupdate --profile compress-output
+
+      - name: Sign the build output
+        id: sign
+        if: inputs.publish
+        env:
+          SIGNING_KEY_ID: "B535F6A4A2B7EDEA"
+          SIGNING_KEY: ${{ secrets.SHA256SUM_PGP_KEY }}
+        run: |
+          # Sign the output
+          echo -n "${SIGNING_KEY}" | gpg --import
+          just sign-build-sysupdate ${SIGNING_KEY_ID}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v3
+        if: inputs.publish
+        with:
+          tag_name: ${{ steps.freezeversion.outputs.image_version }}
+          make_latest: true
+          working_directory: mkosi.output
+          files: |
+            *usr*.raw*
+            *.efi
+            SHA256SUMS
+            SHA256SUMS.gpg
