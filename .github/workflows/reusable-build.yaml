@@ -59,7 +59,7 @@ jobs:
 
       - name: Generate a random key (PRs/branches)
         id: keygen
-        if: $[{ !inputs.publish }]
+        if: !inputs.publish
         run: |
           # Generate a random key. Echo stderr to /dev/null so that the key is not printed out
           mkosi genkey 2>/dev/null
