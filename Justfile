@@ -21,7 +21,10 @@ _check-root:
 [group('sysupdate')]
 build-sysupdate *args:
     #!/usr/bin/env bash
+    set -euxo pipefail
     mkosi build -ff sysupdate --profile=sysupdate,hardening {{ args }}
+    # Make sure the output directory belongs to the user running the build, even if the build was run as root
+    [ -z ${SUDO_USER} ] || chown -R ${SUDO_USER}:${SUDO_USER} "{{ base_dir }}/mkosi.output"
 
 # Checksum and sign the build artifacts for systemd-sysupdate
 sign-build-sysupdate $signing_key="":
@@ -41,7 +44,7 @@ sign-build-sysupdate $signing_key="":
 
 [group('sysupdate')]
 _find-raw-sysupdate:
-    find "{{ base_dir }}/mkosi.output" -maxdepth 1 -iname "{{ image_name }}*x86-64.raw" | sort -nr | head -n1
+    find "{{ base_dir }}/mkosi.output" -maxdepth 1 -iname "*{{ image_name }}*x86-64.raw" | sort -nr | head -n1
 
 # Open the generated .raw in a vm
 [group('sysupdate')]
